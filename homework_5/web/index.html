@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Docker 微服務展示</title><link rel="stylesheet" href="style.css"></head>
+<body><main>
+<header><span class="tag">DOCKER LAB / 01</span><h1>四個容器，一個留言系統。</h1><p>Nginx 提供網頁與代理，Node.js 寫入留言，Python 統計，PostgreSQL 保存資料。</p></header>
+<section class="grid" aria-label="服務狀態">
+<article><small>01 / ENTRYPOINT</small><h2>Nginx</h2><p>Web Server · Reverse Proxy</p><strong>目前頁面已載入</strong></article>
+<article><small>02 / WRITE SERVICE</small><h2>Node.js</h2><p>留言讀取與新增</p><strong id="node">檢查中…</strong></article>
+<article><small>03 / ANALYTICS</small><h2>Python</h2><p>留言數量統計</p><strong id="python">檢查中…</strong></article>
+<article><small>04 / PERSISTENCE</small><h2>PostgreSQL</h2><p>具名 Volume：pg_data</p><strong id="db">檢查中…</strong></article>
+</section>
+<section class="workspace"><div><span class="tag">LIVE DEMO</span><h2>留下你的測試訊息</h2>
+<form id="form"><label for="content">留言內容（最多 200 字）</label><textarea id="content" maxlength="200" required placeholder="試著新增留言，再重建容器確認資料仍存在。"></textarea><button id="submit">新增留言</button><button id="refresh" type="button" class="secondary">重新整理</button></form>
+<p id="notice" role="status" aria-live="polite"></p><div class="metric"><b id="count">—</b><span>筆留言 · Python 即時查詢資料庫</span></div></div>
+<div><h2>最新留言 <small>最多顯示 100 筆</small></h2><ul id="messages"><li>載入中…</li></ul></div></section>
+<footer>瀏覽器 → Nginx :8080 → Node.js / Python → PostgreSQL<br>僅 Nginx 對主機開放連接埠，其餘服務使用 Compose 內部網路。</footer>
+</main><script src="app.js"></script></body></html>
