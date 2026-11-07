@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "campus-kinmen",
+  "main": "worker.js",
+  "compatibility_date": "2026-11-07",
+  "workers_dev": true,
+  "assets": {"directory": "./static", "binding": "ASSETS", "run_worker_first": true},
+  "d1_databases": [{"binding": "DB", "database_name": "campus-kinmen-db", "database_id": "REPLACE_WITH_YOUR_DATABASE_ID", "migrations_dir": "migrations"}]
+}

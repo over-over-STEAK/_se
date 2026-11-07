@@ -1,0 +1,38 @@
+CREATE TABLE courses(id TEXT PRIMARY KEY,name TEXT,teacher TEXT,credits INTEGER,day INTEGER,period INTEGER,room TEXT,capacity INTEGER);
+CREATE TABLE enrollments(user_id TEXT REFERENCES users(id),course_id TEXT REFERENCES courses(id),PRIMARY KEY(user_id,course_id));
+CREATE TABLE grades(user_id TEXT REFERENCES users(id),name TEXT,credits INTEGER,score INTEGER,term TEXT);
+CREATE TABLE notices(id INTEGER PRIMARY KEY,title TEXT,body TEXT,date TEXT);
+CREATE TABLE users(id TEXT PRIMARY KEY,name TEXT,role TEXT,salt TEXT,password TEXT);
+INSERT INTO "users" VALUES('student','王小明','student','61fc5f296b27b97cc2cd50751e589396','cca29bc0c3c5d8666082ce21d5f376b05ca73bd85b32072f2c93fe6951eb9916');
+INSERT INTO "users" VALUES('student2','李小華','student','60671e7ea29deb53f29de0ac3c7180ac','045ca6f05b22fdda37a5e2d4fc7a1439aa55dd0232ed67726de7943a5e4980d4');
+INSERT INTO "users" VALUES('admin','教務管理員','admin','','');
+INSERT INTO "courses" VALUES('CS301','作業系統','陳老師',3,1,1,'理工大樓 301',40);
+INSERT INTO "courses" VALUES('CS302','資料庫系統','林老師',3,2,2,'理工大樓 302',35);
+INSERT INTO "courses" VALUES('CS303','演算法','黃老師',3,3,1,'理工大樓 305',40);
+INSERT INTO "courses" VALUES('CS304','人工智慧導論','吳老師',3,1,1,'理工大樓 401',30);
+INSERT INTO "courses" VALUES('GE201','金門文化與歷史','許老師',2,4,3,'綜合大樓 201',50);
+INSERT INTO "courses" VALUES('CS305','現代軟體工程','蔡老師',3,5,2,'電腦教室 A',35);
+INSERT INTO "courses" VALUES('GE202','海洋與島嶼永續','楊老師',2,3,3,'綜合大樓 202',1);
+INSERT INTO "courses" VALUES('PE101','體育：羽球','李老師',1,2,4,'體育館',30);
+INSERT INTO "enrollments" VALUES('student','CS301');
+INSERT INTO "enrollments" VALUES('student','CS302');
+INSERT INTO "enrollments" VALUES('student','CS303');
+INSERT INTO "enrollments" VALUES('student2','GE202');
+INSERT INTO "grades" VALUES('student','程式設計',3,91,'114-2');
+INSERT INTO "grades" VALUES('student','資料結構',3,86,'114-2');
+INSERT INTO "grades" VALUES('student','離散數學',3,82,'114-2');
+INSERT INTO "grades" VALUES('student','英文',2,88,'114-2');
+INSERT INTO "notices" VALUES(1,'115 學年度第 1 學期選課提醒','本系統為課程專案，選課時間與課程均為模擬資料。請於選課後確認個人課表。','2026-11-07');
+INSERT INTO "notices" VALUES(2,'讓學習，從島嶼出發','歡迎使用 Campus Kinmen 校務平台。整合課程、學習成果與校園公告。','2026-11-06');
+INSERT INTO "notices" VALUES(3,'圖書館學習資源說明','示範公告：可使用管理員帳號新增及刪除公告。','2026-11-05');
+CREATE TABLE sessions(token_hash TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),csrf TEXT NOT NULL,expires INTEGER NOT NULL);
+CREATE INDEX sessions_expiry ON sessions(expires);
+CREATE TABLE login_limits(key TEXT PRIMARY KEY,count INTEGER NOT NULL,expires INTEGER NOT NULL);
+CREATE INDEX login_limits_expiry ON login_limits(expires);
+-- SQLite evaluates the checks and insert atomically, including concurrent enrollments.
+CREATE TRIGGER enrollment_checks BEFORE INSERT ON enrollments BEGIN
+ SELECT CASE WHEN EXISTS(SELECT 1 FROM enrollments WHERE user_id=NEW.user_id AND course_id=NEW.course_id) THEN RAISE(ABORT,'duplicate_course') END;
+ SELECT CASE WHEN EXISTS(SELECT 1 FROM courses c JOIN enrollments e ON c.id=e.course_id JOIN courses target ON target.id=NEW.course_id WHERE e.user_id=NEW.user_id AND c.day=target.day AND c.period=target.period) THEN RAISE(ABORT,'schedule_conflict') END;
+ SELECT CASE WHEN (SELECT COALESCE(SUM(c.credits),0) FROM courses c JOIN enrollments e ON c.id=e.course_id WHERE e.user_id=NEW.user_id)+(SELECT credits FROM courses WHERE id=NEW.course_id)>25 THEN RAISE(ABORT,'credit_limit') END;
+ SELECT CASE WHEN (SELECT COUNT(*) FROM enrollments WHERE course_id=NEW.course_id)>=(SELECT capacity FROM courses WHERE id=NEW.course_id) THEN RAISE(ABORT,'course_full') END;
+END;
