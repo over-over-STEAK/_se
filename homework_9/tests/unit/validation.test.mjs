@@ -1,0 +1,16 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {requiredText,boundedInteger,courseValues,gradeValues} from '../../validation.js';
+const course={id:'CS900',name:'資料庫',teacher:'林老師',credits:3,day:1,period:2,room:'A101',capacity:40};
+const grade={user_id:'student',name:'資料庫',credits:3,score:85,term:'115-1'};
+const invalid=fn=>assert.throws(fn,e=>e.status===400);
+test('文字驗證：清除前後空白並保留中文',()=>assert.equal(requiredText(' 金門 ',2),'金門'));
+test('文字驗證：拒絕空白、非字串與超長輸入',()=>{for(const v of ['', '  ', null,123,'abcd'])invalid(()=>requiredText(v,3))});
+test('整數驗證：接受上下界',()=>{assert.equal(boundedInteger(0,0,100),0);assert.equal(boundedInteger(100,0,100),100)});
+test('整數驗證：拒絕超界、小數、字串、NaN',()=>{for(const v of [-1,101,1.5,'90',NaN,null])invalid(()=>boundedInteger(v,0,100))});
+test('課程驗證：接受合法資料',()=>assert.deepEqual(courseValues(course),['CS900','資料庫','林老師',3,1,2,'A101',40]));
+test('課程驗證：拒絕不合法課號',()=>{for(const id of ['CS 1',"x';DROP",'中文'])invalid(()=>courseValues({...course,id}))});
+test('課程驗證：學分、星期、節次、容量邊界',()=>{for(const [k,v] of [['credits',0],['credits',7],['day',0],['day',6],['period',5],['capacity',0],['capacity',501]])invalid(()=>courseValues({...course,[k]:v}))});
+test('成績驗證：接受 0 分與 100 分',()=>{for(const score of [0,100])assert.equal(gradeValues({...grade,score})[3],score)});
+test('成績驗證：拒絕負分、超過100、小數',()=>{for(const score of [-1,101,70.5])invalid(()=>gradeValues({...grade,score}))});
+test('學期驗證：接受兩學期，拒絕錯誤格式',()=>{for(const term of ['114-2','115-1'])assert.equal(gradeValues({...grade,term})[4],term);for(const term of ['2026-1','115-3','115/1',''])invalid(()=>gradeValues({...grade,term}))});
